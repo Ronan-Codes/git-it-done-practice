@@ -1,4 +1,24 @@
 var issueContainerEl = document.querySelector("#issues-container");
+var limitWarningEl = document.querySelector("#limit-warning");
+var repoNameEl = document.querySelector("#repo-name");
+
+var getRepoName = function() {
+    // grab repo name from url query string
+    var queryString = document.location.search;
+
+    // split queryString to isolate user/repo
+    var repoName = queryString.split("=")[1];
+
+    if (repoName) {
+        getRepoIssues(repoName);
+
+        // display repo name on the page
+        repoNameEl.textContent = repoName;
+    } else {
+        // if no repo was given, redirect to the homepage
+        document.location.replace("./index.html");
+    }
+}
 
 // GET /repos/{owner}/{repo}/issues is the provided endpoint in github docs
 var getRepoIssues = function(repo) {
@@ -10,11 +30,17 @@ var getRepoIssues = function(repo) {
         if (response.ok) {
             response.json().then(function(data) {
                 // Pass response data to displayIssues DOM function
-                displayIssues(data)
+                displayIssues(data);
+
+                // check if api has paginated issues (more than 30)
+                if (response.headers.get("Link")) {
+                    displayWarning(repo)
+                }
             });
         }
         else {
-            alert("There was a problem with your request!");
+            // if not successful, redirect to homepage
+            document.location.replace("./index.html");
         }
     })
     .catch()
@@ -59,4 +85,17 @@ var displayIssues = function(issues) {
     }
 }
 
-getRepoIssues("Ronan-Codes/git-it-done-practice");
+var displayWarning = function(repo) {
+    // add text to warning container
+    limitWarningEl.textContent = "To see more than 30 issues, visit ";
+
+    var linkEl = document.createElement("a");
+    linkEl.textContent = "See More Issues on GitHub.com";
+    linkEl.setAttribute("href", "https://github.com/" + repo + "/issues");
+    linkEl.setAttribute("target", "_blank");
+
+    // append to warning container
+    limitWarningEl.append(linkEl);
+};
+
+getRepoName();
